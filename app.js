@@ -2,10 +2,27 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const OpenAI = require('openai');
 const _ = require('lodash');
+const cors = require('cors');
 dotenv = require('dotenv');
 dotenv.config();
 
 const app = express();
+
+// Configure CORS
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  maxAge: 86400 // 24 hours
+}));
+
+// Add OPTIONS handler for preflight requests
+app.options('/api/analyze-prompt', (req, res) => {
+  res.status(200).end();
+});
+
+
 app.use(bodyParser.json({ limit: '50mb' }));
 
 const openai = new OpenAI({

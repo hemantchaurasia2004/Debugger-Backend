@@ -171,12 +171,7 @@ function buildAnalysisPrompt(
     - Percentage estimates of potential improvement in relevant dimensions
     - Potential side effects or trade-offs of implementing the changes
     - Key metrics to monitor after implementation
-
-    # ALTERNATIVE SOLUTIONS
-    Provide at least one alternative approach to solving the same issue, with different trade-offs, and explain:
-    - Why it might be superior in some contexts
-    - Why it might be inferior in others
-    - What additional information would help decide between approaches`;
+    `;
 
   // Bot type specific architectural details
   let architecturalDetails = '';

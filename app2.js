@@ -364,107 +364,107 @@ function buildAnalysisPrompt(
   ## **OUTPUT FORMAT REQUIRED**
     Your response must be a valid JSON object with the following structure:
 
-    {
+  {
   "type": "object",
   "required": ["issue_identified", "root_cause_analysis", "prompt_changes", "expected_impact", "test_scenarios", "confidence_score"],
   "properties": {
     "issue_identified": {
       "type": "string",
-      "description": "A clear description of the issue detected in the chatbot's behavior."
+      "description": "A clear, specific description of the exact issue detected in the chatbot's behavior, with concrete examples from the conversation."
     },
     "root_cause_analysis": {
       "type": "string",
-      "description": "An explanation of why the issue occurred, based on the prompt, configured variables, skills, and execution logs."
+      "description": "Comprehensive technical explanation of why the issue occurred, based on detailed analysis of the prompt, configured variables, skills, and execution logs. Include specific references to problematic sections."
     },
     "prompt_changes": {
       "type": "object",
-      "description": "Comprehensive details of all prompt modifications required.",
+      "description": "Comprehensive and explicit details of all required prompt modifications that MUST be implemented exactly as specified.",
       "properties": {
         "modifications": {
           "type": "array",
-          "description": "List of instructions to be modified in a component.",
+          "description": "Precise instructions for existing text that MUST be modified, with exact replacement text provided.",
           "items": {
             "type": "object",
             "required": ["target", "path", "current", "updated", "reasoning"],
             "properties": {
               "target": {
                 "type": "string",
-                "description": "Target where the instruction is to be modified.",
+                "description": "Specific component target where the modification MUST be applied.",
                 "enum": ["dc_node_prompt", "variable_prompt"]
               },
               "path": {
                 "type": "string",
-                "description": "Full path of the field inside the component prompt where the instruction is to be modified."
+                "description": "Exact path/location within the component where the modification MUST be applied - be as precise as possible."
               },
               "current": {
-                "type": "string",
-                "description": "Current instruction text to be replaced."
+                "type": "string", 
+                "description": "Complete original text that MUST be replaced, quoted verbatim to ensure accurate replacement."
               },
               "updated": {
                 "type": "string",
-                "description": "Updated instruction text."
+                "description": "Complete replacement text that MUST be inserted exactly as written - no placeholders or abbreviated content."
               },
               "reasoning": {
                 "type": "string",
-                "description": "Detailed reasoning for the modification with analysis of why this change will fix the issue."
+                "description": "Detailed technical explanation with specific examples of how this exact modification resolves the identified issue."
               }
             }
           }
         },
         "deletions": {
           "type": "array",
-          "description": "List of instructions to be deleted from a component.",
+          "description": "Explicit instructions for text that MUST be completely removed, with precise identification of content to delete.",
           "items": {
             "type": "object",
             "required": ["target", "path", "instruction_text", "reasoning"],
             "properties": {
               "target": {
                 "type": "string",
-                "description": "Target where the instruction is to be deleted.",
+                "description": "Specific component target from which text MUST be deleted.",
                 "enum": ["dc_node_prompt", "variable_prompt"]
               },
               "path": {
                 "type": "string",
-                "description": "Full path of the field inside the component prompt from which the instruction needs to be deleted."
+                "description": "Exact path/location within the component where deletion MUST occur - include sufficient context to uniquely identify."
               },
               "instruction_text": {
                 "type": "string",
-                "description": "Current instruction text to be deleted."
+                "description": "Complete text that MUST be deleted, quoted verbatim with surrounding context to ensure precise removal."
               },
               "reasoning": {
                 "type": "string",
-                "description": "Detailed reasoning for the deletion with analysis of how removing this will improve performance."
+                "description": "Comprehensive justification with specific examples demonstrating why removal is mandatory and how it directly resolves the issue."
               }
             }
           }
         },
         "additions": {
           "type": "array",
-          "description": "List of instructions to be added in a component.",
+          "description": "Explicit instructions for new text that MUST be added, with exact placement and complete content provided.",
           "items": {
             "type": "object",
             "required": ["target", "path", "pre_text", "new_instruction", "reasoning"],
             "properties": {
               "target": {
                 "type": "string",
-                "description": "Target in which the instruction needs to be added.",
+                "description": "Specific component target where new text MUST be added.",
                 "enum": ["dc_node_prompt", "variable_prompt"]
               },
               "path": {
                 "type": "string",
-                "description": "Full path of the field inside the component prompt where the new instructions are to be added."
+                "description": "Exact path/location within the component where addition MUST occur - be extremely specific to ensure correct placement."
               },
               "pre_text": {
                 "type": "string",
-                "description": "Instruction text after which the new instruction is to be added."
+                "description": "Exact preceding text after which new content MUST be inserted, quoted verbatim to ensure correct placement."
               },
               "new_instruction": {
                 "type": "string",
-                "description": "New instructions to be added."
+                "description": "Complete new text that MUST be added exactly as written - provide fully formatted content ready for direct insertion."
               },
               "reasoning": {
                 "type": "string",
-                "description": "Comprehensive reasoning for adding the new instructions with expected improvements."
+                "description": "Detailed technical explanation with specific examples demonstrating precisely how this addition resolves the issue and improves bot behavior."
               }
             }
           }
@@ -473,56 +473,56 @@ function buildAnalysisPrompt(
     },
     "expected_impact": {
       "type": "string",
-      "description": "How the proposed changes will improve the chatbot's performance with specific behavioral changes."
+      "description": "Precise explanation of how the proposed changes will improve the chatbot's performance, with specific behavioral changes and technical outcomes that will directly resolve the identified issues."
     },
     "risks_and_tradeoffs": {
       "type": "string",
-      "description": "Potential risks, unintended consequences, or trade-offs associated with implementing the proposed fixes."
+      "description": "Comprehensive analysis of potential risks, unintended consequences, or trade-offs associated with implementing the proposed fixes, including specific mitigation strategies."
     },
     "test_scenarios": {
       "type": "array",
-      "description": "Specific test scenarios that can recreate the conversation to verify fix effectiveness.",
+      "description": "Concrete test scenarios with step-by-step instructions that MUST be used to verify the effectiveness of the fixes.",
       "items": {
         "type": "object",
         "required": ["scenario", "user_input", "expected_outcome", "validation_criteria"],
         "properties": {
           "scenario": {
             "type": "string",
-            "description": "Description of the test scenario."
+            "description": "Detailed description of the test scenario with specific context and conditions for testing."
           },
           "user_input": {
             "type": "string",
-            "description": "Sample user input to test the fix."
+            "description": "Exact sample user input text that MUST be used to test the fix - write as a complete user message."
           },
           "expected_outcome": {
             "type": "string",
-            "description": "The expected behavior after implementing the fix."
+            "description": "Precise description of the expected behavior after implementing the fix, including specific skill execution and response characteristics."
           },
           "validation_criteria": {
             "type": "string",
-            "description": "Specific criteria to determine if the fix was successful."
+            "description": "Specific measurable criteria that MUST be used to determine if the fix was successful, focusing on observable changes in bot behavior."
           }
         }
       }
     },
     "implementation_guide": {
       "type": "object",
-      "description": "Guide for implementing the proposed changes.",
+      "description": "Detailed technical guide for implementing all proposed changes with precise instructions.",
       "required": ["priority", "difficulty", "estimated_time"],
       "properties": {
         "priority": {
           "type": "string",
-          "description": "Implementation priority level.",
+          "description": "Implementation priority level based on impact severity and business criticality.",
           "enum": ["high", "medium", "low"]
         },
         "difficulty": {
           "type": "string",
-          "description": "Implementation difficulty level.",
+          "description": "Technical implementation difficulty level considering complexity and potential side effects.",
           "enum": ["easy", "moderate", "complex"]
         },
         "implementation_steps": {
           "type": "array",
-          "description": "Step-by-step guide for implementing the changes.",
+          "description": "Detailed step-by-step technical guide for implementing all changes, with exact ordering and verification steps.",
           "items": {
             "type": "string"
           }
@@ -531,7 +531,7 @@ function buildAnalysisPrompt(
     },
     "confidence_score": {
       "type": "string",
-      "description": "Confidence level in the proposed fix solving the issue.",
+      "description": "Assessment of confidence level that the proposed fixes will completely resolve the identified issues, based on technical analysis and testing.",
       "enum": ["High", "Medium", "Low"]
     }
   }

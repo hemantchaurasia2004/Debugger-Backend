@@ -268,34 +268,177 @@ function buildAnalysisPrompt(
     Your response must be a valid JSON object with the following structure:
 
     {
-    "issue_identified": "A clear description of the issue detected in the chatbot's behavior.",
-    "root_cause_analysis": "An explanation of why the issue occurred, based on the prompt, configured variables, skills, and execution logs.",
-    "prompt_comparison": {
-        "present_prompt": "The exact section of the current prompt that needs modification.",
-        "fixed_prompt": "The revised section of the prompt with corrections applied."
+  "type": "object",
+  "required": ["issue_identified", "root_cause_analysis", "prompt_changes", "expected_impact", "test_scenarios", "confidence_score"],
+  "properties": {
+    "issue_identified": {
+      "type": "string",
+      "description": "A clear description of the issue detected in the chatbot's behavior."
     },
-    "proposed_fixes": [
-        {
-        "fix_target": "dc_node_prompt or variable_prompt",
-        "fix_type": "addition|modification|removal",
-        "fix_details": "A detailed explanation of the specific modification required to resolve the issue."
+    "root_cause_analysis": {
+      "type": "string",
+      "description": "An explanation of why the issue occurred, based on the prompt, configured variables, skills, and execution logs."
+    },
+    "prompt_changes": {
+      "type": "object",
+      "description": "Comprehensive details of all prompt modifications required.",
+      "properties": {
+        "modifications": {
+          "type": "array",
+          "description": "List of instructions to be modified in a component.",
+          "items": {
+            "type": "object",
+            "required": ["target", "path", "current", "updated", "reasoning"],
+            "properties": {
+              "target": {
+                "type": "string",
+                "description": "Target where the instruction is to be modified.",
+                "enum": ["dc_node_prompt", "variable_prompt"]
+              },
+              "path": {
+                "type": "string",
+                "description": "Full path of the field inside the component prompt where the instruction is to be modified."
+              },
+              "current": {
+                "type": "string",
+                "description": "Current instruction text to be replaced."
+              },
+              "updated": {
+                "type": "string",
+                "description": "Updated instruction text."
+              },
+              "reasoning": {
+                "type": "string",
+                "description": "Detailed reasoning for the modification with analysis of why this change will fix the issue."
+              }
+            }
+          }
+        },
+        "deletions": {
+          "type": "array",
+          "description": "List of instructions to be deleted from a component.",
+          "items": {
+            "type": "object",
+            "required": ["target", "path", "instruction_text", "reasoning"],
+            "properties": {
+              "target": {
+                "type": "string",
+                "description": "Target where the instruction is to be deleted.",
+                "enum": ["dc_node_prompt", "variable_prompt"]
+              },
+              "path": {
+                "type": "string",
+                "description": "Full path of the field inside the component prompt from which the instruction needs to be deleted."
+              },
+              "instruction_text": {
+                "type": "string",
+                "description": "Current instruction text to be deleted."
+              },
+              "reasoning": {
+                "type": "string",
+                "description": "Detailed reasoning for the deletion with analysis of how removing this will improve performance."
+              }
+            }
+          }
+        },
+        "additions": {
+          "type": "array",
+          "description": "List of instructions to be added in a component.",
+          "items": {
+            "type": "object",
+            "required": ["target", "path", "pre_text", "new_instruction", "reasoning"],
+            "properties": {
+              "target": {
+                "type": "string",
+                "description": "Target in which the instruction needs to be added.",
+                "enum": ["dc_node_prompt", "variable_prompt"]
+              },
+              "path": {
+                "type": "string",
+                "description": "Full path of the field inside the component prompt where the new instructions are to be added."
+              },
+              "pre_text": {
+                "type": "string",
+                "description": "Instruction text after which the new instruction is to be added."
+              },
+              "new_instruction": {
+                "type": "string",
+                "description": "New instructions to be added."
+              },
+              "reasoning": {
+                "type": "string",
+                "description": "Comprehensive reasoning for adding the new instructions with expected improvements."
+              }
+            }
+          }
         }
-    ],
-    "expected_impact": "How the proposed changes will improve the chatbot's performance.",
-    "risk_and_tradeoffs": "Potential risks, unintended consequences, or trade-offs associated with implementing the proposed fixes.",
-    "test_plan": [
-        "Test scenario 1",
-        "Test scenario 2"
-    ],
-    "implementation_guide": {
-        "priority": "high|medium|low",
-        "difficulty": "easy|moderate|complex",
-        "estimated_time": "Estimated time to implement the fix"
+      }
     },
-    "confidence_score": "High, Medium, or Low",
-    "complete_fixed_prompt": "The entire prompt with all fixes applied for easy copy-paste implementation."
+    "expected_impact": {
+      "type": "string",
+      "description": "How the proposed changes will improve the chatbot's performance with specific behavioral changes."
+    },
+    "risks_and_tradeoffs": {
+      "type": "string",
+      "description": "Potential risks, unintended consequences, or trade-offs associated with implementing the proposed fixes."
+    },
+    "test_scenarios": {
+      "type": "array",
+      "description": "Specific test scenarios that can recreate the conversation to verify fix effectiveness.",
+      "items": {
+        "type": "object",
+        "required": ["scenario", "user_input", "expected_outcome", "validation_criteria"],
+        "properties": {
+          "scenario": {
+            "type": "string",
+            "description": "Description of the test scenario."
+          },
+          "user_input": {
+            "type": "string",
+            "description": "Sample user input to test the fix."
+          },
+          "expected_outcome": {
+            "type": "string",
+            "description": "The expected behavior after implementing the fix."
+          },
+          "validation_criteria": {
+            "type": "string",
+            "description": "Specific criteria to determine if the fix was successful."
+          }
+        }
+      }
+    },
+    "implementation_guide": {
+      "type": "object",
+      "description": "Guide for implementing the proposed changes.",
+      "required": ["priority", "difficulty", "estimated_time"],
+      "properties": {
+        "priority": {
+          "type": "string",
+          "description": "Implementation priority level.",
+          "enum": ["high", "medium", "low"]
+        },
+        "difficulty": {
+          "type": "string",
+          "description": "Implementation difficulty level.",
+          "enum": ["easy", "moderate", "complex"]
+        },
+        "implementation_steps": {
+          "type": "array",
+          "description": "Step-by-step guide for implementing the changes.",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "confidence_score": {
+      "type": "string",
+      "description": "Confidence level in the proposed fix solving the issue.",
+      "enum": ["High", "Medium", "Low"]
     }
-  }`;
+  }
+}`;
 
   // Combine all sections into the final prompt
   return `${systemPrompt}

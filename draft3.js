@@ -39,8 +39,8 @@ app.post('/api/analyze-prompt', async (req, res) => {
       configured_variables,
       configured_skills,
       skill_execution_status,
-      model_configuration,
-      model_response_configuration
+      MODEL_CONFIG,
+      MODEL_RESPONSE
     } = req.body;
 
     if (!conversationHistory || !targetBotResponse || !userFeedback) {
@@ -65,8 +65,8 @@ app.post('/api/analyze-prompt', async (req, res) => {
       configured_variables,
       configured_skills,
       skill_execution_status,
-      model_configuration,
-      model_response_configuration
+      MODEL_CONFIG,
+      MODEL_RESPONSE
     );
 
     const analysis = await analyzeLLMPrompt(analysisPrompt);
@@ -91,9 +91,8 @@ function buildAnalysisPrompt(
   configured_variables,
   configured_skills,
   skill_execution_status,
-  model_configuration,
-    model_response_configuration
-
+  MODEL_CONFIG,
+  MODEL_RESPONSE
 ) {
   // Core system prompt
   const systemPrompt = `
@@ -262,6 +261,7 @@ function buildAnalysisPrompt(
   - Validate that **knowledge base lookups** are performed where applicable.
   - Check if **skills are properly executed** based on the configured rules and conversation flow.
   - Optimize the **structure of conversation guidelines** and other context variables to prevent ambiguity.
+  - 
   - Analyze the **configured input variables** for the DC node and ensure they are correctly influencing the chatbot's behavior.
   - Take the **skill descriptions** into account to verify that the skill performs the expected function as per its intended design.
   - Consider **log data that tracks skill execution** and factor in a **yes/no input** on whether the skill was executed to refine debugging analysis.`;
@@ -366,16 +366,7 @@ function buildAnalysisPrompt(
   ## **SKILL EXECUTION STATUS**
   ${skill_execution_status !== undefined ? `Skill ${skill_execution_status ? 'was' : 'was NOT'} executed based on DC Node logs.` : 'Skill execution status not provided.'}`;
 
-
-  const modelConfigDisplay = `
-  ## **MODEL CONFIGURATION**
-  ${model_configuration ? JSON.stringify(model_configuration, null, 2) : 'No model configuration provided.'}`;
-
-  const modelResponseConfigDisplay = `
-  ## **MODEL RESPONSE CONFIGURATION**
-  ${model_response_configuration ? JSON.stringify(model_response_configuration, null, 2) : 'No model response configuration provided.'}`;
-
-
+  // Output format explanation
   const outputFormat = `
   ## **OUTPUT FORMAT REQUIRED**
     Your response must be a valid JSON object with the following structure:
@@ -383,112 +374,270 @@ function buildAnalysisPrompt(
   {
   "type": "object",
   "required": [
-    "issue_identified", 
-    "root_cause_analysis", 
+    "issue_analysis",
     "prompt_changes", 
-    "expected_impact", 
-    "test_scenarios", 
-    "model_configuration_analysis",
-    "confidence_score"
+    "test_scenarios",
+    "reasoning_process"
   ],
   "properties": {
-    "issue_identified": {
-      "type": "string",
-      "description": "A clear, specific description of the exact issue detected in the chatbot's behavior, with concrete examples from the conversation."
-    },
-    "root_cause_analysis": {
-      "type": "string",
-      "description": "Comprehensive technical explanation of why the issue occurred, based on detailed analysis of the prompt, configured variables, skills, and execution logs. Include specific references to problematic sections."
-    },
-    "model_configuration_analysis": {
+    "issue_analysis": {
       "type": "object",
-      "description": "Detailed analysis of how model and response configurations impact the chatbot's performance",
+      "description": "Detailed breakdown of the identified chatbot behavior issue",
+      "required": [
+        "specific_issue",
+        "root_causes",
+        "failure_type",
+        "deviation_details"
+      ],
       "properties": {
-        "configuration_impact": {
+        "specific_issue": {
           "type": "string",
-          "description": "Explanation of how current model configurations contribute to the identified issue"
+          "description": "Precise description of the chatbot's problematic behavior"
         },
-        "recommended_configuration_changes": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "parameter": {
-                "type": "string",
-                "description": "Specific model or response configuration parameter to modify"
-              },
-              "current_value": {
-                "type": "string",
-                "description": "Current value of the parameter"
-              },
-              "recommended_value": {
-                "type": "string",
-                "description": "Suggested new value for the parameter"
-              },
-              "rationale": {
-                "type": "string",
-                "description": "Detailed explanation for why this configuration change is recommended"
-              }
-            }
-          }
-        },
-        "performance_limitations": {
+        "root_causes": {
           "type": "array",
           "items": {
             "type": "string",
-            "description": "Specific limitations in the current model or response configuration that may be hindering performance"
-          }
+            "description": "Underlying reasons for the chatbot's incorrect behavior"
+          },
+          "minItems": 1,
+          "maxItems": 5
+        },
+        "failure_type": {
+          "type": "string",
+          "enum": [
+            "Skill Execution Failure",
+            "Token Truncation",
+            "Instruction Ambiguity",
+            "Contradictory Instructions",
+            "Context Management Failure"
+          ]
+        },
+        "deviation_details": {
+          "type": "string",
+          "description": "Explanation of how the chatbot's response deviated from expected behavior"
         }
       }
     },
     "prompt_changes": {
       "type": "object",
-      "description": "Comprehensive and explicit details of all required prompt modifications that MUST be implemented exactly as specified.",
+      "description": "Comprehensive modifications to resolve identified issues",
+      "required": [
+        "modifications",
+        "deletions",
+        "additions"
+      ],
       "properties": {
         "modifications": {
           "type": "array",
+          "description": "Precise instructions for text modifications",
           "items": {
             "type": "object",
-            "required": ["target", "path", "current", "updated", "reasoning"],
+            "required": [
+              "target",
+              "path",
+              "current",
+              "updated",
+              "reasoning"
+            ],
             "properties": {
               "target": {
                 "type": "string",
-                "enum": ["dc_node_prompt", "variable_prompt", "model_configuration"]
+                "enum": [
+                  "dc_node_prompt",
+                  "variable_prompt",
+                  "skill_execution_rules",
+                  "token_management"
+                ]
               },
               "path": {
                 "type": "string",
-                "description": "Exact path/location within the component where the modification MUST be applied"
+                "description": "Exact location of the modification in the prompt"
               },
               "current": {
-                "type": "string", 
-                "description": "Complete original text that MUST be replaced"
+                "type": "string",
+                "description": "Original text to be replaced"
               },
               "updated": {
                 "type": "string",
-                "description": "Complete replacement text that MUST be inserted exactly as written"
+                "description": "New text to replace the original"
               },
               "reasoning": {
                 "type": "string",
-                "description": "Detailed technical explanation of how this modification resolves the identified issue"
+                "description": "Detailed explanation of why this modification resolves the issue"
+              }
+            }
+          }
+        },
+        "deletions": {
+          "type": "array",
+          "description": "Text segments to be removed from the prompt",
+          "items": {
+            "type": "object",
+            "required": [
+              "target",
+              "path",
+              "instruction_text",
+              "reasoning"
+            ],
+            "properties": {
+              "target": {
+                "type": "string",
+                "enum": [
+                  "dc_node_prompt",
+                  "variable_prompt"
+                ]
+              },
+              "path": {
+                "type": "string",
+                "description": "Exact location of text to be deleted"
+              },
+              "instruction_text": {
+                "type": "string",
+                "description": "Complete text to be deleted"
+              },
+              "reasoning": {
+                "type": "string",
+                "description": "Justification for removal of the text"
+              }
+            }
+          }
+        },
+        "additions": {
+          "type": "array",
+          "description": "New text to be added to the prompt",
+          "items": {
+            "type": "object",
+            "required": [
+              "target",
+              "path",
+              "pre_text",
+              "new_instruction",
+              "reasoning"
+            ],
+            "properties": {
+              "target": {
+                "type": "string",
+                "enum": [
+                  "dc_node_prompt",
+                  "variable_prompt"
+                ]
+              },
+              "path": {
+                "type": "string",
+                "description": "Exact location where new text should be inserted"
+              },
+              "pre_text": {
+                "type": "string",
+                "description": "Text preceding the insertion point"
+              },
+              "new_instruction": {
+                "type": "string",
+                "description": "Complete new text to be added"
+              },
+              "reasoning": {
+                "type": "string",
+                "description": "Explanation of how the addition improves prompt clarity or functionality"
               }
             }
           }
         }
       }
     },
-    "expected_impact": {
-      "type": "string",
-      "description": "Precise explanation of how the proposed changes will improve the chatbot's performance"
-    },
-    "risks_and_tradeoffs": {
-      "type": "string",
-      "description": "Comprehensive analysis of potential risks, unintended consequences, or trade-offs associated with implementing the proposed fixes"
+    "reasoning_process": {
+      "type": "object",
+      "description": "Detailed chain-of-thought reasoning for prompt modifications",
+      "required": [
+        "potential_solutions",
+        "solution_evaluation",
+        "selected_solution",
+        "self_consistency_check"
+      ],
+      "properties": {
+        "potential_solutions": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "properties": {
+              "solution_description": {
+                "type": "string",
+                "description": "Detailed description of the proposed solution"
+              },
+              "potential_impact": {
+                "type": "string",
+                "description": "Potential positive and negative impacts of the solution"
+              }
+            }
+          }
+        },
+        "solution_evaluation": {
+          "type": "object",
+          "properties": {
+            "clarity_score": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10,
+              "description": "Evaluation of solution clarity"
+            },
+            "specificity_score": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10,
+              "description": "Evaluation of solution specificity"
+            },
+            "user_intent_alignment_score": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10,
+              "description": "Evaluation of alignment with user intent"
+            }
+          }
+        },
+        "selected_solution": {
+          "type": "object",
+          "properties": {
+            "rationale": {
+              "type": "string",
+              "description": "Reasoning for selecting the final solution"
+            },
+            "confidence_level": {
+              "type": "string",
+              "enum": [
+                "Low",
+                "Medium",
+                "High"
+              ]
+            }
+          }
+        },
+        "self_consistency_check": {
+          "type": "object",
+          "properties": {
+            "contradictions_identified": {
+              "type": "boolean"
+            },
+            "resolution_details": {
+              "type": "string",
+              "description": "Details of how any contradictions were resolved"
+            }
+          }
+        }
+      }
     },
     "test_scenarios": {
       "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
       "items": {
         "type": "object",
-        "required": ["scenario", "user_input", "expected_outcome", "validation_criteria"],
+        "required": [
+          "scenario",
+          "user_input",
+          "expected_outcome",
+          "validation_criteria"
+        ],
         "properties": {
           "scenario": {
             "type": "string",
@@ -496,42 +645,18 @@ function buildAnalysisPrompt(
           },
           "user_input": {
             "type": "string",
-            "description": "Exact sample user input text for testing the fix"
+            "description": "Exact sample user input for testing"
           },
           "expected_outcome": {
             "type": "string",
-            "description": "Precise description of the expected behavior after implementing the fix"
+            "description": "Precise description of expected bot behavior"
           },
           "validation_criteria": {
             "type": "string",
-            "description": "Specific measurable criteria to determine if the fix was successful"
+            "description": "Specific measurable criteria to validate the fix"
           }
         }
       }
-    },
-    "implementation_guide": {
-      "type": "object",
-      "properties": {
-        "priority": {
-          "type": "string",
-          "enum": ["high", "medium", "low"]
-        },
-        "difficulty": {
-          "type": "string",
-          "enum": ["easy", "moderate", "complex"]
-        },
-        "implementation_steps": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "confidence_score": {
-      "type": "string",
-      "description": "Assessment of confidence level that the proposed fixes will completely resolve the identified issues",
-      "enum": ["High", "Medium", "Low"]
     }
   }
 }`;
@@ -557,8 +682,6 @@ ${dcNodePromptDisplay}
 ${variablesDisplay}
 ${skillsDisplay}
 ${skillExecutionStatus}
-${modelConfigDisplay}
-${modelResponseConfigDisplay}
 
 ${outputFormat}
 
